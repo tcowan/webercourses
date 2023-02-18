@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+
+# catc - reads course descriptions on stdin and outputs a CSV file
+
+import re
+import sys
+
+# the CSV field delimiter
+delim = '^'
+
+#The fields extracted from the course description
+credits = ""
+longdesc = ""
+prereqs = ""
+major = ""
+number = ""
+desc = ""
+
+# output the CSV header
+print ("major, number, desc, credits, longdesc, prereqs")
+for line in sys.stdin:
+    # extract description
+    result = re.match(r"""^Credits:\s*\(([\d-]+)\)\s*(.*)\s*\\n""", line)
+    if result:
+        if len(result.groups()) == 2:
+            credits = result.group(1)
+            longdesc = result.group(2)
+            if longdesc[0:2] == r'\n':
+                longdesc = longdesc[2:]
+            print(longdesc[-2:], file=sys.stderr)
+            if longdesc[-2:] == r'\n':
+                longdesc = longdesc[:-2]
+            prereqs = ""
+
+            # check for prereqs
+            result = re.match(r"""(.*)Pre-requisite\(s\)\:\s*(.*)$""", longdesc)
+            
+            # if there are prereqs (not all course descriptions have them) 
+            #   separate the prereqs from the course description
+            if result:
+                if len(result.groups()) == 2:
+                    longdesc = result.group(1)
+                    # remove the beginning and ending \n
+                    if longdesc[0:2] == r'\n':
+                        longdesc = longdesc[2:]
+                    #print(longdesc[-2:], file=sys.stderr)
+                    if longdesc[-2:] == r'\n':
+                        longdesc = longdesc[:-2]
+                    prereqs = result.group(2)
+
+        continue
+    result = re.match(r"""^(\w+) ([\w\d]+) - (.*)$""", line)
+    if result:
+        if len(result.groups()) == 3:
+        
+            # A course line means the end of a catalog entry - output it
+            if not major == "" and not number == "":
+                if prereqs == "":
+                    print('{0}{5}{1}{5}{2}{5}{3}{5}{4}'.format(major, number, desc, credits, longdesc, delim))
+                else:
+                    print('{0}{6}{1}{6}{2}{6}{3}{6}{4}{6}{5}'.format(major, number, desc, credits, longdesc, prereqs, delim))
+                
+                credits = ""
+                longdesc = ""
+                prereqs = ""
+                major = ""
+                number = ""
+                desc = ""
+
+            major = result.group(1)
+            number = result.group(2)
+            desc = result.group(3)
+            desc = desc[:-3]
+            #print("major:{0} number={1} desc={2}".format(major, number, desc))
+
+    # if not matching a course number line or a Credits line
+    #   it means it is probably an extension of the long
+    #   description.  Append it.
+    else:
+        if line[-1] == '\n': 
+            line = line[:-1]
+        longdesc = longdesc + line
+        if longdesc[0:2] == r'\n':
+            longdesc = longdesc[2:]
+        # print(longdesc[-2:], file=sys.stderr)
+        if longdesc[-2:] == r'\n':
+            longdesc = longdesc[:-2]
+        # check for prereqs
+        result = re.match(r"""(.*)Pre-requisite\(s\)\:\s*(.*)$""", longdesc)
+        if result:
+            if len(result.groups()) == 2:
+                longdesc = result.group(1)
+                if longdesc[0:2] == r'\n':
+                    longdesc = longdesc[2:]
+                # print(longdesc[-2:], file=sys.stderr)
+                if longdesc[-2:] == r'\n':
+                    longdesc = longdesc[:-2]
+                prereqs = result.group(2)
+
+        continue

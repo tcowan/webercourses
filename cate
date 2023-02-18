@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+# cate - extracts all of the text from the Weber catalog beginning with
+#   Course Descriptions to be input to script catc which outputs a CSV
+
+import re
+from pdfminer.high_level import extract_pages, extract_text
+
+#extracts strings surrounded by quotes
+qs = re.compile(r"""[\'\"](.*)[\'\"]""")
+
+# a flag which is true causing all the text elements to be skipped until
+#    "Course Descriptions" is found.  The catalog must be in this folder
+#    and named catalog.pdf
+
+skip = True
+
+for page_layout in extract_pages('catalog.pdf'):
+    for element in page_layout:
+        if skip == True and not re.search("'Course Descriptions ",str(element)):
+            continue
+        skip = False
+        
+        # look for a string enclosed in single or double quotes and print it
+        result = re.search(r"""[\'\"](.*)[\'\"]""", str(element)) 
+        if not result:
+            continue;
+        if len(result.groups()) > 1:
+            print("Error: {0} has more than one string".format(result))
+            exit(1)
+        text = result.group(1)
+
+        print(text)
+
