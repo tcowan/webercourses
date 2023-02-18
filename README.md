@@ -1,9 +1,4 @@
 # webercourses
-:icons: font
-:icon-set: octicon
-:nofooter:
-:stem: asciimath
-:imagesdir: images
 
 ## Introduction
 This repo contains two Python 3 script, `cate` and `catc`.  
